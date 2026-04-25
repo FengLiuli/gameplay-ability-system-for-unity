@@ -95,77 +95,36 @@ namespace GAS.Editor
 
             const string title = "BeanUpdater - 收集Bean定义";
 
-            // 0. 添加 TagRequirementData（被配置表引用的结构体）
-            EditorUtility.DisplayProgressBar(title, "收集 TagRequirementData...", 0f / 7f);
-            CollectTagRequirementDataBean(beans);
-
             // 1. 收集XParam参数类  
-            EditorUtility.DisplayProgressBar(title, "收集 XParam 参数类...", 1f / 7f);
+            EditorUtility.DisplayProgressBar(title, "收集 XParam 参数类...", 0f / 6f);
             CollectXParamBeans(beans);
 
             // 2. 收集Cue逻辑类  
-            EditorUtility.DisplayProgressBar(title, "收集 Cue 逻辑类...", 2f / 7f);
+            EditorUtility.DisplayProgressBar(title, "收集 Cue 逻辑类...", 1f / 6f);
             CollectCueBeans(beans);
 
             // 3. 收集MMC逻辑类  
-            EditorUtility.DisplayProgressBar(title, "收集 MMC 逻辑类...", 3f / 7f);
+            EditorUtility.DisplayProgressBar(title, "收集 MMC 逻辑类...", 2f / 6f);
             CollectMmcBeans(beans);
 
             // 4. 收集AbilityLogic逻辑类  
-            EditorUtility.DisplayProgressBar(title, "收集 AbilityLogic 逻辑类...", 4f / 7f);
+            EditorUtility.DisplayProgressBar(title, "收集 AbilityLogic 逻辑类...", 3f / 6f);
             CollectAbilityLogicBeans(beans);
 
             // 5. 收集AbilityTask类  
-            EditorUtility.DisplayProgressBar(title, "收集 AbilityTask 类...", 5f / 7f);
+            EditorUtility.DisplayProgressBar(title, "收集 AbilityTask 类...", 4f / 6f);
             CollectAbilityTaskBeans(beans);
 
             // 6. 收集TargetCatcher类  
-            EditorUtility.DisplayProgressBar(title, "收集 TargetCatcher 类...", 6f / 7f);
+            EditorUtility.DisplayProgressBar(title, "收集 TargetCatcher 类...", 5f / 6f);
             CollectTargetCatcherBeans(beans);
 
             return beans;
         }
 
-        /// <summary>
-        /// 收集TagRequirementData Bean定义（被配置表引用的结构体）
-        /// </summary>
-        private static void CollectTagRequirementDataBean(List<BeanDefinition> beans)
-        {
-            var bean = new BeanDefinition
-            {
-                Name = "TagRequirementData",
-                Parent = "",
-                Comment = "标签需求结构，用于 All/Any/None 条件判断",
-                IsAbstract = false
-            };
-
-            bean.Fields.Add(new BeanField
-            {
-                Name = "All",
-                Type = "(array#sep=;),int",
-                Comment = "必须全部满足的标签"
-            });
-
-            bean.Fields.Add(new BeanField
-            {
-                Name = "Any",
-                Type = "(array#sep=;),int",
-                Comment = "满足任意一个即可的标签"
-            });
-
-            bean.Fields.Add(new BeanField
-            {
-                Name = "None",
-                Type = "(array#sep=;),int",
-                Comment = "必须全部不满足的标签"
-            });
-
-            beans.Add(bean);
-        }
-
-        /// <summary>
-        /// 收集XParam参数类Bean定义
-        /// </summary>
+        /// <summary>  
+        /// 收集XParam参数类Bean定义  
+        /// </summary>  
         private static void CollectXParamBeans(List<BeanDefinition> beans)
         {
             var xParamTypes = GetTypesImplementingInterface(typeof(XParam));
