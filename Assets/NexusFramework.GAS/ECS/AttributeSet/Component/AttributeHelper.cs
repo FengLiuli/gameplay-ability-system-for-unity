@@ -53,6 +53,15 @@ namespace NexusFramework.GAS.ECS
             attrSet.Attributes[attrIndex] = attr;
             attrSets[attrSetIndex] = attrSet;
 
+            if (math.abs(oldValue - attr.CurrentValue) > 0.0001f)
+            {
+                GASInternalBridge.Enqueue(new AttributeChangedEvent
+                {
+                    Target = asc, AttrSetCode = attrSetCode, AttrCode = attrCode,
+                    OldValue = oldValue, NewValue = attr.CurrentValue
+                });
+            }
+
             return attr.CurrentValue;
         }
     }

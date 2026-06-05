@@ -24,6 +24,7 @@ namespace NexusFramework.GAS
             RegisterService(new EffectService());
             RegisterService(new AbilityService());
             RegisterService(new CueService());
+            RegisterService(new AttributeService());
             RegisterUtility(CreateConfigLoader());
         }
 

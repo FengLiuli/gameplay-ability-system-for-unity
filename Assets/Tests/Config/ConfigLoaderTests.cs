@@ -60,5 +60,56 @@ namespace NexusFramework.GAS.Tests.Config
             Assert.That(loader.GetAbilityConfig(1), Is.Not.Null, "abilityCode=1 应返回有效配置");
             Assert.That(loader.GetAbilityConfig(999), Is.Null);
         }
+
+        /// <summary>Mod 数据包覆盖基础包配置</summary>
+        [Test]
+        public void MergedLoader_ModOverridesBase()
+        {
+            var merged = new MergedConfigLoader();
+            merged.RegisterPack(new MockDataPack()); // base
+
+            // mod: 覆盖 configId=1 为不同的配置
+            merged.RegisterPack(new OverridePack(configId: 1,
+                new NexusFramework.GAS.Tests.TestDurationConfig(duration: 99)));
+
+            var result = merged.GetGameplayEffectConfig(1);
+            Assert.That(result, Is.Not.Null);
+            Assert.That(result.Length, Is.EqualTo(1), "Mod 包覆盖了 base，只返回 mod 的配置");
+        }
+
+        /// <summary>Mod 数据包不覆盖未冲突的配置</summary>
+        [Test]
+        public void MergedLoader_NonConflicting_FallsThrough()
+        {
+            var merged = new MergedConfigLoader();
+            merged.RegisterPack(new MockDataPack());
+            merged.RegisterPack(new OverridePack(configId: 99,
+                new NexusFramework.GAS.Tests.TestDurationConfig(duration: 99)));
+
+            // configId=2 只在 base 包中存在
+            var result = merged.GetGameplayEffectConfig(2);
+            Assert.That(result, Is.Not.Null, "未冲突的 ID 应穿透到 base 包");
+        }
+
+        /// <summary>Mod 覆盖包——指定 ID 返回自定义配置</summary>
+        private class OverridePack : IDataPack
+        {
+            private readonly int _id;
+            private readonly NexusFramework.GAS.ECS.GameplayEffectComponentConfig[] _configs;
+
+            public OverridePack(int configId, params NexusFramework.GAS.ECS.GameplayEffectComponentConfig[] configs)
+            {
+                _id = configId;
+                _configs = configs;
+            }
+
+            public string PackName => "ModOverride";
+            public NexusFramework.GAS.ECS.GameplayEffectComponentConfig[] GetGameplayEffectConfig(int id)
+                => id == _id ? _configs : null;
+            public NexusFramework.GAS.ECS.AbilityComponentConfig[] GetAbilityConfig(int id) => null;
+            public NexusFramework.GAS.Config.GameplayCueConfig GetGameplayCueConfig(int id) => default;
+            public NexusFramework.GAS.Config.MMCConfig GetMmcConfig(int id) => default;
+            public NexusFramework.GAS.Config.TagHierarchyData GetTagHierarchy() => default;
+        }
     }
 }

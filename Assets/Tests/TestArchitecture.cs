@@ -6,7 +6,9 @@ namespace NexusFramework.GAS.Tests
     {
         protected override IConfigLoader CreateConfigLoader()
         {
-            return new MockConfigLoader();
+            var merged = new MergedConfigLoader();
+            merged.RegisterPack(new MockDataPack());
+            return merged;
         }
     }
 }

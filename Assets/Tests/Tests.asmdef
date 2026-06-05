@@ -6,6 +6,7 @@
         "UnityEditor.TestRunner",
         "NexusFramework",
         "NexusFramework.GAS",
+        "NexusFramework.GAS.Editor",
         "Unity.Entities",
         "Unity.Collections"
     ],
