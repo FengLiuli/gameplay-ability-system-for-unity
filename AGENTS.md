@@ -1,5 +1,5 @@
 # Repository Guidelines
-
+## 思考与输出均使用中文。
 ## Project Structure & Module Organization
 This repository is a Unity project (2022.3 LTS) centered on EX-GAS 2.0.
 
