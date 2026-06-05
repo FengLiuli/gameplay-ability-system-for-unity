@@ -255,7 +255,6 @@ namespace NexusFramework.DataCarrier
                 carrierTraits.Remove(carrierId);
                 carriersByType[carrierId.TypeId].Remove(carrierId);
 
-                Debug.Log($"Destroyed carrier: {carrierId}");
                 return true;
             }
         }

@@ -20,7 +20,7 @@ namespace NexusFramework.GAS.Services
             if (targetEntity == Entity.Null) return;
 
             GameplayEffectComponentConfig.SetEntityManager(em);
-            var loader = this.GetUtility<Config.IConfigLoader>();
+            var loader = this.GetModel<ConfigModel>();
             var configs = loader.GetGameplayEffectConfig(configId);
             if (configs == null) return;
 

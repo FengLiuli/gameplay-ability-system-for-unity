@@ -1,4 +1,5 @@
 using NexusFramework.GAS.Config;
+using NexusFramework.GAS.Models;
 
 namespace NexusFramework.GAS.Tests
 {
@@ -6,9 +7,14 @@ namespace NexusFramework.GAS.Tests
     {
         protected override IConfigLoader CreateConfigLoader()
         {
-            var merged = new MergedConfigLoader();
-            merged.RegisterPack(new MockDataPack());
-            return merged;
+            return new MockConfigLoader();
+        }
+
+        protected override void OnInit()
+        {
+            base.OnInit();
+            var model = (ConfigModel)GetModel<ConfigModel>();
+            MockConfigLoader.Populate(model);
         }
     }
 }

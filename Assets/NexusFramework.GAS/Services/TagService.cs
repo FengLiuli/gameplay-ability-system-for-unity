@@ -13,7 +13,7 @@ namespace NexusFramework.GAS.Services
         protected override void OnInit()
         {
             var em = this.GetService<WorldService>().EntityManager;
-            var hierarchy = this.GetUtility<Config.IConfigLoader>().GetTagHierarchy();
+            var hierarchy = this.GetModel<ConfigModel>().GetTagHierarchy();
 
             _tagMap = new SingletonGameplayTagMap
             {

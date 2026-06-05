@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using Sirenix.OdinInspector;
+using NexusFramework.GAS.Config;
 
 namespace NexusFramework.GAS.ECS
 {

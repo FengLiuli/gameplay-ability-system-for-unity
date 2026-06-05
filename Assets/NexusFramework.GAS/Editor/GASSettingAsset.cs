@@ -13,7 +13,7 @@ namespace NexusFramework.GAS.Editor
         public const string DEFAULT_CONFIG_PROJECT_PATH = "EX_GAS_Config/ProjectConfigTable/exgas_config";
 
         [Header("表导出路径（Luban JSON 输出）")]
-        public string TableOutpuPath = DEFAULT_TABLE_OUTPUT_PATH;
+        public string TableOutputPath = DEFAULT_TABLE_OUTPUT_PATH;
 
         [Header("配置表工程路径（含 Datas/ 和 gen.bat）")]
         public string ConfigProjectPath = DEFAULT_CONFIG_PROJECT_PATH;
@@ -33,7 +33,7 @@ namespace NexusFramework.GAS.Editor
                 return;
             }
             var projectRoot = Application.dataPath.Substring(0, Application.dataPath.Length - 6);
-            var jsonOutputPath = Path.Combine(projectRoot, TableOutpuPath);
+            var jsonOutputPath = Path.Combine(projectRoot, TableOutputPath);
             var process = new Process
             {
                 StartInfo = new ProcessStartInfo

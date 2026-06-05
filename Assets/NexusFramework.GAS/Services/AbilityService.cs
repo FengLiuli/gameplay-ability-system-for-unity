@@ -1,4 +1,7 @@
+using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
 using Unity.Entities;
 using NexusFramework;
 using NexusFramework.DataCarrier;
@@ -11,8 +14,23 @@ namespace NexusFramework.GAS.Services
     {
         private readonly Dictionary<CarrierId, List<int>> _grantedAbilities = new();
 
-        protected override void OnInit() { }
+        protected override void OnInit()
+        {
+            ScanAndRegisterAll();
+        }
+
         protected override void OnDeinit() { }
+
+        /// <summary>自动扫描 Architecture 所在程序集中所有 AbilityLogicBase 子类并注册</summary>
+        public void ScanAndRegisterAll()
+        {
+            var assembly = Architecture.GetType().Assembly;
+            foreach (var type in assembly.GetTypes())
+            {
+                if (type.IsAbstract || !typeof(AbilityLogicBase).IsAssignableFrom(type)) continue;
+                AbilityLogicFactory.Register(type.Name, type);
+            }
+        }
 
         public void GrantAbility(CarrierId carrier, int abilityCode, IArchitecture architecture)
         {
@@ -23,7 +41,7 @@ namespace NexusFramework.GAS.Services
             var em = this.GetService<WorldService>().EntityManager;
             AbilityComponentConfig.SetEntityManager(em);
 
-            var configs = this.GetUtility<Config.IConfigLoader>().GetAbilityConfig(abilityCode);
+            var configs = this.GetModel<ConfigModel>().GetAbilityConfig(abilityCode);
             if (configs == null) return;
 
             var abilityEntity = em.CreateEntity();

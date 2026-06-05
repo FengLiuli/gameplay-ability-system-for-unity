@@ -1,5 +1,4 @@
-﻿using System;
-using NexusFramework;
+﻿using NexusFramework;
 using NexusFramework.DataCarrier;
 using NexusFramework.GAS.Config;
 using NexusFramework.GAS.ECS;
@@ -17,6 +16,7 @@ namespace NexusFramework.GAS
         protected override void OnInit()
         {
             RegisterModel(new GASEntityMapModel());
+            RegisterModel(new ConfigModel());
             RegisterService(new WorldService());
             RegisterService(new TimerService());
             RegisterService(new EventBridgeService());
@@ -26,16 +26,6 @@ namespace NexusFramework.GAS
             RegisterService(new CueService());
             RegisterService(new AttributeService());
             RegisterUtility(CreateConfigLoader());
-        }
-
-        public void InitConfig(Func<string, string> jsonLoader)
-        {
-            var loader = this.GetUtility<IConfigLoader>();
-            if (loader is JsonConfigLoader json)
-            {
-                json.Init(jsonLoader);
-                json.LoadAll();
-            }
         }
 
         public CarrierId CreateGASCarrier(string typeName)
@@ -58,18 +48,23 @@ namespace NexusFramework.GAS
             var ws = this.GetService<WorldService>();
             if (ws.EntityManager.Exists(entity))
             {
-                // 回收 BEAttrSet 中各属性集的 NativeArray
                 var em = ws.EntityManager;
-                if (em.HasBuffer<ECS.BEAttrSet>(entity))
+                try
                 {
-                    var attrSets = em.GetBuffer<ECS.BEAttrSet>(entity);
-                    for (int i = 0; i < attrSets.Length; i++)
+                    if (em.HasBuffer<ECS.BEAttrSet>(entity))
                     {
-                        var attrs = attrSets[i].Attributes;
-                        if (attrs.IsCreated) attrs.Dispose();
+                        var attrSets = em.GetBuffer<ECS.BEAttrSet>(entity);
+                        for (int i = 0; i < attrSets.Length; i++)
+                        {
+                            var attrs = attrSets[i].Attributes;
+                            if (attrs.IsCreated) attrs.Dispose();
+                        }
                     }
                 }
-                em.DestroyEntity(entity);
+                finally
+                {
+                    em.DestroyEntity(entity);
+                }
             }
 
             GetCarrierManager().DestroyCarrier(carrierId);

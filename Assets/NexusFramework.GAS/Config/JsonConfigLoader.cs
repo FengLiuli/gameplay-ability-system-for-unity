@@ -1,80 +1,54 @@
-﻿using NexusFramework;
-using System;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using System.IO;
+using NexusFramework;
 using NexusFramework.GAS.ECS;
+using UnityEngine;
 
 namespace NexusFramework.GAS.Config
 {
     public class JsonConfigLoader : IConfigLoader
     {
-        private Func<string, string> _jsonLoader;
-        private Dictionary<int, GameplayEffectComponentConfig[]> _effectConfigs = new();
-        private Dictionary<int, AbilityComponentConfig[]> _abilityConfigs = new();
-        private TagHierarchyData _tagHierarchy;
-
         public bool Initialized { get; set; }
 
-        public void Init(Func<string, string> jsonLoader)
+        void ICanInit.Init() => Initialized = true;
+        void ICanInit.Deinit() => Initialized = false;
+
+        public string LoadRaw(string fullPath)
         {
-            _jsonLoader = jsonLoader;
+            if (!File.Exists(fullPath)) return null;
+            return File.ReadAllText(fullPath);
         }
 
-        void ICanInit.Init()
+        public GameplayEffectComponentConfig[] ParseGameplayEffect(string json)
         {
+            if (string.IsNullOrEmpty(json)) return null;
+            // TODO: 从 JSON 反序列化为 GameplayEffectComponentConfig[]
+            Debug.LogWarning("[JsonConfigLoader] ParseGameplayEffect not implemented");
+            return null;
         }
 
-        void ICanInit.Deinit()
+        public AbilityComponentConfig[] ParseAbility(string json)
         {
-            _effectConfigs.Clear();
-            _abilityConfigs.Clear();
-            _jsonLoader = null;
+            Debug.LogWarning("[JsonConfigLoader] ParseAbility not implemented");
+            return null;
         }
 
-        public void LoadAll()
+        public GameplayCueConfig ParseGameplayCue(string json)
         {
-            if (_jsonLoader == null) return;
-            LoadTagHierarchy();
-        }
-
-        public GameplayEffectComponentConfig[] GetGameplayEffectConfig(int id)
-        {
-            return _effectConfigs.TryGetValue(id, out var config) ? config : null;
-        }
-
-        public AbilityComponentConfig[] GetAbilityConfig(int id)
-        {
-            return _abilityConfigs.TryGetValue(id, out var config) ? config : null;
-        }
-
-        public GameplayCueConfig GetGameplayCueConfig(int id)
-        {
+            Debug.LogWarning("[JsonConfigLoader] ParseGameplayCue not implemented");
             return default;
         }
 
-        public MMCConfig GetMmcConfig(int id)
+        public MMCConfig ParseMmc(string json)
         {
+            Debug.LogWarning("[JsonConfigLoader] ParseMmc not implemented");
             return default;
         }
 
-        public TagHierarchyData GetTagHierarchy()
+        public TagHierarchyData ParseTagHierarchy(string json)
         {
-            return _tagHierarchy;
-        }
-
-        private void LoadTagHierarchy()
-        {
-            var json = _jsonLoader("exgas_tbgameplaytags");
-            if (string.IsNullOrEmpty(json))
-            {
-                _tagHierarchy = new TagHierarchyData { Tags = Array.Empty<TagNode>() };
-                return;
-            }
-
-            var nodes = new List<TagNode>();
+            if (string.IsNullOrEmpty(json)) return default;
             var node = JsonUtility.FromJson<TagNode>(json);
-            nodes.Add(node);
-            _tagHierarchy = new TagHierarchyData { Tags = nodes.ToArray() };
+            return new TagHierarchyData { Tags = new[] { node } };
         }
     }
 }

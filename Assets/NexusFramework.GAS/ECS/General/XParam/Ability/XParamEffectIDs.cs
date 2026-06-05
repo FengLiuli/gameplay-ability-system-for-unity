@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-// [NF.GAS] old namespace removed
 using Sirenix.OdinInspector;
+using NexusFramework.GAS.Config;
 
 namespace NexusFramework.GAS.ECS
 {

@@ -30,7 +30,7 @@ namespace NexusFramework.GAS.Editor
             EditorGUILayout.LabelField("GAS 路径配置", EditorStyles.boldLabel);
             EditorGUILayout.Space(5);
 
-            EditorGUILayout.PropertyField(serialized.FindProperty("TableOutpuPath"));
+            EditorGUILayout.PropertyField(serialized.FindProperty("TableOutputPath"));
             EditorGUILayout.PropertyField(serialized.FindProperty("ConfigProjectPath"));
 
             serialized.ApplyModifiedProperties();
