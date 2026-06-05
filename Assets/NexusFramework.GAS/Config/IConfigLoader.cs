@@ -47,6 +47,7 @@ namespace NexusFramework.GAS.Config
         public TagNode[] Tags;
     }
 
+    [System.Serializable]
     public struct TagNode
     {
         public int Code;
