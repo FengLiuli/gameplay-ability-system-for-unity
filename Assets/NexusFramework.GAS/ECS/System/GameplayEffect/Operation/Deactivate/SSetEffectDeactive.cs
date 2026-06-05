@@ -38,7 +38,7 @@ namespace NexusFramework.GAS.ECS
                 
                 // EffectContainer脏标记
                 var targetAsc = inUsage.ValueRO.Target;
-                // TODO: EventBridge
+                GASInternalBridge.Enqueue(new GERemovedEvent { Target = inUsage.ValueRO.Target, EffectCode = ge.Index });
             }
 
             ecb.Playback(state.EntityManager);

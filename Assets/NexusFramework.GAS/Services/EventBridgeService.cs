@@ -7,16 +7,28 @@ namespace NexusFramework.GAS.Services
     {
         protected override void OnInit()
         {
-            GASInternalBridge.OnBeforeDrain += OnBeforeDrain;
+            GASInternalBridge.OnEventEnqueued += Dispatch;
         }
 
         protected override void OnDeinit()
         {
-            GASInternalBridge.OnBeforeDrain -= OnBeforeDrain;
+            GASInternalBridge.OnEventEnqueued -= Dispatch;
         }
 
-        private void OnBeforeDrain()
+        private void Dispatch(object evt)
         {
+            switch (evt)
+            {
+                case GEAppliedEvent e:          this.SendEvent(e); break;
+                case GEActivatedEvent e:        this.SendEvent(e); break;
+                case GERemovedEvent e:          this.SendEvent(e); break;
+                case AttributeChangedEvent e:   this.SendEvent(e); break;
+                case AttributeBaseChangedEvent e: this.SendEvent(e); break;
+                case AbilityActivatedEvent e:   this.SendEvent(e); break;
+                case AbilityEndedEvent e:       this.SendEvent(e); break;
+                case AbilityCancelledEvent e:   this.SendEvent(e); break;
+                case EffectStackChangedEvent e: this.SendEvent(e); break;
+            }
         }
     }
 }

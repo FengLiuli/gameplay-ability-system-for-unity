@@ -56,7 +56,20 @@ namespace NexusFramework.GAS
             model.Unbind(carrierId);
             var ws = this.GetService<WorldService>();
             if (ws.EntityManager.Exists(entity))
-                ws.EntityManager.DestroyEntity(entity);
+            {
+                // 回收 BEAttrSet 中各属性集的 NativeArray
+                var em = ws.EntityManager;
+                if (em.HasBuffer<ECS.BEAttrSet>(entity))
+                {
+                    var attrSets = em.GetBuffer<ECS.BEAttrSet>(entity);
+                    for (int i = 0; i < attrSets.Length; i++)
+                    {
+                        var attrs = attrSets[i].Attributes;
+                        if (attrs.IsCreated) attrs.Dispose();
+                    }
+                }
+                em.DestroyEntity(entity);
+            }
 
             GetCarrierManager().DestroyCarrier(carrierId);
         }

@@ -58,6 +58,7 @@ namespace NexusFramework.GAS.ECS
                         // 1.移除一层stack
                         TryChangeStackCount(
                             state.EntityManager,
+                            ecb,
                             geEntity,
                             stacking.ValueRO,
                             stacking.ValueRO.StackCount - 1,
@@ -87,7 +88,7 @@ namespace NexusFramework.GAS.ECS
         /// <summary>
         /// 立即应用 Instant 类型的 GameplayEffect（直接修改 BaseValue），替代 GameplayEffectHelper.ApplyGameplayEffectImmediate
         /// </summary>
-        private static void ApplyGameplayEffectImmediate(EntityManager entityManager, Entity gameplayEffect, Entity target, Entity source)
+        private static void ApplyGameplayEffectImmediate(EntityManager entityManager, EntityCommandBuffer ecb, Entity gameplayEffect, Entity target, Entity source)
         {
             if (!entityManager.HasComponent<MCModifiers>(gameplayEffect)) return;
 
@@ -113,16 +114,17 @@ namespace NexusFramework.GAS.ECS
                 if (data.IsClampMin) newValue = math.max(newValue, data.MinValue);
                 if (data.IsClampMax) newValue = math.min(newValue, data.MaxValue);
 
-                // TODO: EventBridge
-                // newValue = GASEventCenter.InvokeOnBaseValueChangeBefore(target, modifier.AttrSetCode, modifier.AttrCode, newValue);
-
                 data.BaseValue = newValue;
 
                 if (newValue != oldValue)
                 {
                     data.Dirty = true;
                     change = true;
-                    // TODO: EventBridge
+                    GASInternalBridge.Enqueue(new AttributeBaseChangedEvent
+                    {
+                        Target = target, AttrSetCode = modifier.AttrSetCode, AttrCode = modifier.AttrCode,
+                        OldValue = oldValue, NewValue = newValue
+                    });
                 }
 
                 attrSet.Attributes[attrIndex] = data;
@@ -130,7 +132,7 @@ namespace NexusFramework.GAS.ECS
             }
 
             if (change)
-                entityManager.AddComponent<CAttributeIsDirty>(target);
+                ecb.AddComponent<CAttributeIsDirty>(target);
         }
 
         /// <summary>  
@@ -155,7 +157,7 @@ namespace NexusFramework.GAS.ECS
             }
         }
         
-        private void TryChangeStackCount(EntityManager entityManager, Entity ge, CStacking stacking,
+        private void TryChangeStackCount(EntityManager entityManager, EntityCommandBuffer ecb, Entity ge, CStacking stacking,
             int stackCount, RefRW<CDuration> duration, GlobalTimer globalFrameTimer)
         {
             var oldStackCount = entityManager.GetComponentData<CStacking>(ge).StackCount;
@@ -163,19 +165,16 @@ namespace NexusFramework.GAS.ECS
 
             if (stackCount <= 0)
             {
-                // Fix #4: 层数减到0，销毁GE  
                 newStackCount = 0;
-                entityManager.RemoveComponent<CEffectApplied>(ge);
-                entityManager.AddComponent<CEffectDestroy>(ge);
+                ecb.RemoveComponent<CEffectApplied>(ge);
+                ecb.AddComponent<CEffectDestroy>(ge);
             }
             else if (stackCount <= stacking.LimitCount)
             {
-                // Fix #5: 回写 StackCount  
                 newStackCount = stackCount;
                 stacking.StackCount = newStackCount;
                 entityManager.SetComponentData(ge, stacking);
 
-                // Fix #3: 用 RefreshDuration 替代 SActivateEffect.UpdateActiveTime  
                 if (stacking.EffectDurationRefreshPolicy == EffectDurationRefreshPolicy.RefreshOnSuccessfulApplication)
                 {
                     RefreshDuration(ref duration.ValueRW, globalFrameTimer);
@@ -196,21 +195,19 @@ namespace NexusFramework.GAS.ECS
             }
             else
             {
-                // 溢出逻辑  
                 if (stacking.overflowEffects.Length > 0)
                 {
                     var inUsage = entityManager.GetComponentData<CEffectInUsage>(ge);
                     foreach (var overflowEffect in stacking.overflowEffects)
-                        ApplyGameplayEffectImmediate(entityManager, overflowEffect, inUsage.Target, inUsage.Source);
+                        ApplyGameplayEffectImmediate(entityManager, ecb, overflowEffect, inUsage.Target, inUsage.Source);
                 }
 
-                // Fix #7: clearStackOnOverflow 独立于 DurationRefreshPolicy  
                 if (stacking.denyOverflowApplication)
                 {
                     if (stacking.clearStackOnOverflow)
                     {
-                        entityManager.RemoveComponent<CEffectApplied>(ge);
-                        entityManager.AddComponent<CEffectDestroy>(ge);
+                        ecb.RemoveComponent<CEffectApplied>(ge);
+                        ecb.AddComponent<CEffectDestroy>(ge);
                     }
                 }
                 else if (stacking.EffectDurationRefreshPolicy ==
@@ -220,12 +217,12 @@ namespace NexusFramework.GAS.ECS
                 }
             }
 
-            // TODO: EventBridge
-            // GASEventCenter.InvokeOnTryChangeGameplayEffectStackCount(ge, oldStackCount, newStackCount);
             if (oldStackCount != newStackCount)
             {
-                // TODO: EventBridge
-                // GASEventCenter.InvokeOnGameplayEffectContainerIsDirty(inUsage.Target);
+                GASInternalBridge.Enqueue(new EffectStackChangedEvent
+                {
+                    EffectEntity = ge, OldStackCount = oldStackCount, NewStackCount = newStackCount
+                });
             }
         }
     }

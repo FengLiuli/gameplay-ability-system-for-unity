@@ -21,7 +21,7 @@ namespace NexusFramework.GAS.ECS
         [BurstCompile]
         public void OnUpdate(ref SystemState state)
         {
-            var ecb = new EntityCommandBuffer(Allocator.Temp);
+            var removalList = new NativeList<GEBufferRemoval>(Allocator.Temp);
             foreach (var (_, _, _, inUsage, ge) in SystemAPI
                          .Query<
                              RefRO<CEffectInstance>,
@@ -32,19 +32,31 @@ namespace NexusFramework.GAS.ECS
             {
                 var asc = inUsage.ValueRO.Target;
                 var geBuff = SystemAPI.GetBuffer<BGameplayEffect>(asc);
-                // 从geBuff中移除对应的GameplayEffect
                 for (var i = geBuff.Length - 1; i >= 0; i--)
                 {
                     if (geBuff[i].GameplayEffect != ge) continue;
-                    // 触发属性重计算
-                    //CheckEffectAttrDirty(state.EntityManager, ecb, asc, ge);
-                    geBuff.RemoveAt(i);
+                    removalList.Add(new GEBufferRemoval { TargetAsc = asc, BufferIndex = i });
                     break;
                 }
             }
 
-            ecb.Playback(state.EntityManager);
-            ecb.Dispose();
+            // 按 ASC 分组反向删除（避免索引偏移）
+            for (int i = removalList.Length - 1; i >= 0; i--)
+            {
+                var r = removalList[i];
+                var buf = state.EntityManager.GetBuffer<BGameplayEffect>(r.TargetAsc);
+                if (r.BufferIndex < buf.Length && buf[r.BufferIndex].GameplayEffect == Entity.Null)
+                    continue; // 已删除
+                buf.RemoveAt(r.BufferIndex);
+            }
+
+            removalList.Dispose();
+        }
+
+        struct GEBufferRemoval
+        {
+            public Entity TargetAsc;
+            public int BufferIndex;
         }
 
         [BurstCompile]

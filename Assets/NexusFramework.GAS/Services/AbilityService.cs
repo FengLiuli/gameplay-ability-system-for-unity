@@ -150,7 +150,10 @@ namespace NexusFramework.GAS.Services
             foreach (var entity in entitiesToDestroy)
             {
                 if (em.Exists(entity))
+                {
+                    ECS.CleanupAbilityHelper.DisposeAllAbilityNativeArrays(em, entity);
                     em.DestroyEntity(entity);
+                }
             }
 
             if (_grantedAbilities.TryGetValue(carrier, out var list))

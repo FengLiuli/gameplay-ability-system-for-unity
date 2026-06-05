@@ -102,6 +102,57 @@ namespace NexusFramework.GAS.Tests.Stress
             }
         }
 
+        /// <summary>手动创建带 NativeArray 的能力实体 → RemoveAbility 回收不崩溃</summary>
+        [Test]
+        public void ManualAbility_WithNativeArrays_CleanupDoesNotThrow()
+        {
+            var carrier = _arch.CreateGASCarrier("TestUnit");
+            var ownerEntity = _arch.GetModel<GASEntityMapModel>().GetGASEntity(carrier);
+
+            // 手动装配带 NativeArray 的能力组件，验证回收不崩溃
+            for (int i = 0; i < 20; i++)
+            {
+                var abilityEntity = _em.CreateEntity();
+                _em.AddComponent<CAbilityBaseInfo>(abilityEntity);
+                _em.SetComponentData(abilityEntity, new CAbilityBaseInfo { Code = i, Owner = ownerEntity, Level = 1 });
+
+                // 加几个带 NativeArray 的组件
+                _em.AddComponent<CAbilityAssetTags>(abilityEntity);
+                _em.SetComponentData(abilityEntity, new CAbilityAssetTags
+                {
+                    tags = new Unity.Collections.NativeArray<int>(new[] { 1, 2, 3 }, Unity.Collections.Allocator.Persistent)
+                });
+
+                _em.GetBuffer<BAbility>(ownerEntity).Add(new BAbility { Ability = abilityEntity });
+            }
+
+            // 逐个移除——CleanupAbilityHelper 应在 DestroyEntity 前回收所有 NativeArray
+            Assert.DoesNotThrow(() =>
+            {
+                for (int i = 0; i < 20; i++)
+                    _abilityService.RemoveAbility(carrier, i);
+            });
+        }
+
+        /// <summary>带属性的 Carrier 销毁——BEAttrSet NativeArray 回收不崩溃</summary>
+        [Test]
+        public void Carrier_WithAttributes_DestroysWithoutLeaks()
+        {
+            for (int i = 0; i < 30; i++)
+            {
+                var carrier = _arch.CreateGASCarrier("TestUnit");
+                var entity = _arch.GetModel<GASEntityMapModel>().GetGASEntity(carrier);
+                var buf = _em.GetBuffer<BEAttrSet>(entity);
+                var attrs = new Unity.Collections.NativeArray<CAttributeData>(2, Unity.Collections.Allocator.Persistent);
+                attrs[0] = new CAttributeData { Code = 1, BaseValue = 100, CurrentValue = 100 };
+                attrs[1] = new CAttributeData { Code = 2, BaseValue = 50, CurrentValue = 50 };
+                buf.Add(new BEAttrSet { Code = i, Attributes = attrs });
+
+                // DestroyGASCarrier 应在 DestroyEntity 前回收各 attrSet 的 NativeArray
+                Assert.DoesNotThrow(() => _arch.DestroyGASCarrier(carrier));
+            }
+        }
+
         private void TickWorld(int frames)
         {
             for (int i = 0; i < frames; i++)

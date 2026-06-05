@@ -44,7 +44,7 @@ namespace NexusFramework.GAS.ECS
                     period.ValueRW.StartTime = time;
                     foreach (var ge in period.ValueRO.GameplayEffects)
                     {
-                        var instanceGe = state.EntityManager.Instantiate(ge);
+                        var instanceGe = ecb.Instantiate(ge);
                         ecb.AddComponent<WipInstantiateEffect>(instanceGe);
                         ecb.AddComponent<CEffectInUsage>(instanceGe);
                         ecb.SetComponent(instanceGe, new CEffectInUsage()

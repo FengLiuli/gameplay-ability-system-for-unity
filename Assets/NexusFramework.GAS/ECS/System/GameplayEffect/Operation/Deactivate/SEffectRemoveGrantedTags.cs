@@ -20,6 +20,7 @@ namespace NexusFramework.GAS.ECS
         //[BurstCompile]
         public void OnUpdate(ref SystemState state)
         {
+            var removalList = new Unity.Collections.NativeList<TagRemoval>(Unity.Collections.Allocator.Temp);
             foreach (var (_, _, grantedTags, inUsage, ge) in
                      SystemAPI.Query<
                          RefRO<CEffectInstance>,
@@ -27,7 +28,6 @@ namespace NexusFramework.GAS.ECS
                          RefRO<CEffectGrantedTags>,
                          RefRO<CEffectInUsage>>().WithEntityAccess())
             {
-
                 var tags = grantedTags.ValueRO.tags;
                 var targetAsc = inUsage.ValueRO.Target;
                 foreach (var tag in tags)
@@ -37,13 +37,28 @@ namespace NexusFramework.GAS.ECS
                     {
                         if (tempTags[i].tag == tag && tempTags[i].source == ge)
                         {
-                            tempTags.RemoveAt(i);
-                            // TODO: EventBridge
+                            removalList.Add(new TagRemoval { TargetAsc = targetAsc, BufferIndex = i });
                             break;
                         }
                     }
                 }
             }
+
+            // 反向删除以避免索引偏移
+            for (int i = removalList.Length - 1; i >= 0; i--)
+            {
+                var r = removalList[i];
+                var buf = state.EntityManager.GetBuffer<BTemporaryTag>(r.TargetAsc);
+                buf.RemoveAt(r.BufferIndex);
+            }
+
+            removalList.Dispose();
+        }
+
+        struct TagRemoval
+        {
+            public Entity TargetAsc;
+            public int BufferIndex;
         }
 
         [BurstCompile]

@@ -54,26 +54,17 @@ namespace NexusFramework.GAS.ECS
                     if (data.IsClampMin) newValue = math.max(newValue, data.MinValue);
                     if (data.IsClampMax) newValue = math.min(newValue, data.MaxValue);
                     
-                    // OnChangeBefore
-                    // TODO: EventBridge
-                    // newValue = GASEventCenter.InvokeOnBaseValueChangeBefore(asc, modifier.AttrSetCode,
-                    //     modifier.AttrCode, newValue);
-
                     data.BaseValue = newValue;
 
-                    // OnChangeAfter
                     if (newValue != oldValue)
                     {
-                        // BaseValue 改变，需要标记Dirty
                         data.Dirty = true;
                         change = true;
-                        // TODO: EventBridge
-                        // GASEventCenter.InvokeOnBaseValueChangeAfter(
-                        //     asc, 
-                        //     modifier.AttrSetCode, 
-                        //     modifier.AttrCode,
-                        //     oldValue,
-                        //     newValue);
+                        GASInternalBridge.Enqueue(new AttributeBaseChangedEvent
+                        {
+                            Target = asc, AttrSetCode = modifier.AttrSetCode, AttrCode = modifier.AttrCode,
+                            OldValue = oldValue, NewValue = newValue
+                        });
                     }
 
                     attrSet.Attributes[attrIndex] = data;

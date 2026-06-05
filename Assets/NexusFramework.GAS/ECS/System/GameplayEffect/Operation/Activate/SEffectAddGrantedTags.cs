@@ -20,6 +20,7 @@ namespace NexusFramework.GAS.ECS
 
         public void OnUpdate(ref SystemState state)
         {
+            var ecb = new EntityCommandBuffer(Unity.Collections.Allocator.Temp);
             var tagMap = SystemAPI.GetSingleton<SingletonGameplayTagMap>();
             foreach (var (_, _, grantedTags, inUsage,ge) in
                      SystemAPI.Query<
@@ -32,8 +33,13 @@ namespace NexusFramework.GAS.ECS
                 var tags = grantedTags.ValueRO.tags;
                 var targetAsc = inUsage.ValueRO.Target;
                 foreach (var tag in tags)
-                    GasTagHelperManaged.AddTemporaryTagTo(state.EntityManager, tagMap, targetAsc, ge, tag);
+                {
+                    if (!GasTagHelperManaged.HasTemporaryTag(state.EntityManager, tagMap, targetAsc, ge, tag))
+                        ecb.AppendToBuffer<BTemporaryTag>(targetAsc, new BTemporaryTag { source = ge, tag = tag });
+                }
             }
+            ecb.Playback(state.EntityManager);
+            ecb.Dispose();
         }
 
         [BurstCompile]

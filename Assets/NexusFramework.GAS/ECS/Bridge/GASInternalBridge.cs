@@ -3,18 +3,27 @@ using System.Collections.Generic;
 
 namespace NexusFramework.GAS.ECS
 {
-    internal static class GASInternalBridge
+    public static class GASInternalBridge
     {
         private static readonly List<Action> _pendingEvents = new();
         private static readonly object _lock = new();
 
-        internal static event Action OnBeforeDrain;
+        public static event Action OnBeforeDrain;
+        public static event Action<object> OnEventEnqueued;
 
         public static void Enqueue(Action action)
         {
             lock (_lock)
             {
                 _pendingEvents.Add(action);
+            }
+        }
+
+        public static void Enqueue<T>(T evt) where T : struct
+        {
+            lock (_lock)
+            {
+                _pendingEvents.Add(() => OnEventEnqueued?.Invoke(evt));
             }
         }
 

@@ -20,13 +20,36 @@ namespace NexusFramework.GAS.ECS
         public void OnUpdate(ref SystemState state)
         {
             var ecb = new EntityCommandBuffer(Allocator.TempJob);
+            var entities = new NativeList<Entity>(Allocator.Temp);
+
             foreach (var (_,mcCue,cueEntity) in SystemAPI.Query<RefRO<ECKillCue>,MCCue>().WithEntityAccess())
             {
-                // 触发销毁时回调
                 mcCue.cue.OnDestroy(Time.time);
-                // 销毁Cue
+                entities.Add(cueEntity);
+            }
+
+            // 先回收 NativeArray，再销毁实体
+            var em = state.EntityManager;
+            foreach (var cueEntity in entities)
+            {
+                if (em.HasComponent<CPlayRequiredTags>(cueEntity))
+                {
+                    var req = em.GetComponentData<CPlayRequiredTags>(cueEntity).requirement;
+                    if (req.all.IsCreated) req.all.Dispose();
+                    if (req.any.IsCreated) req.any.Dispose();
+                    if (req.none.IsCreated) req.none.Dispose();
+                }
+                if (em.HasComponent<CPlayImmunitedTags>(cueEntity))
+                {
+                    var req = em.GetComponentData<CPlayImmunitedTags>(cueEntity).requirement;
+                    if (req.all.IsCreated) req.all.Dispose();
+                    if (req.any.IsCreated) req.any.Dispose();
+                    if (req.none.IsCreated) req.none.Dispose();
+                }
                 ecb.DestroyEntity(cueEntity);
             }
+
+            entities.Dispose();
             ecb.Playback(state.EntityManager);
             ecb.Dispose();
         }

@@ -22,15 +22,14 @@ namespace NexusFramework.GAS.ECS
         public void OnUpdate(ref SystemState state)
         {
             var globalTimer = SystemAPI.GetSingleton<GlobalTimer>();
-            foreach (var (_, _,inUsage, durationComp, _) in
+            foreach (var (_, _,inUsage, durationComp, _, ge) in
                      SystemAPI.Query<
                          RefRO<CEffectInstance>,
                          RefRO<WipActivateEffect>,
                          RefRO<CEffectInUsage>,
                          RefRW<CDuration>,
-                         RefRO<CEffectInUsage>>())
+                         RefRO<CEffectInUsage>>().WithEntityAccess())
             {
-                // 设置效果为激活状态
                 var duration = durationComp.ValueRW;
                 duration.active = true;
                 duration.activeTime = 
@@ -39,9 +38,7 @@ namespace NexusFramework.GAS.ECS
                     : globalTimer.Turn;
                 durationComp.ValueRW = duration;
                 
-                
-                var targetAsc = inUsage.ValueRO.Target;
-                // TODO: EventBridge
+                GASInternalBridge.Enqueue(new GEActivatedEvent { Target = inUsage.ValueRO.Target, EffectCode = ge.Index });
             }
         }
 

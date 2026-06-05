@@ -41,10 +41,9 @@ namespace NexusFramework.GAS.ECS
                     abilityLogic.logic.ActivateAbility(globalTimer.ValueRO);
 
                     CancelAbilitiesWithTags(state.EntityManager, tagMap, ecb, ability);
+                    GASInternalBridge.Enqueue(new AbilityActivatedEvent { Owner = owner, AbilityCode = basicInfo.ValueRO.Code });
                 }
 
-                // TODO: EventBridge
-                // GASEventCenter.InvokeOnActivateResult(ability, result);
 
                 ecb.RemoveComponent<CAbilityInTryActivate>(ability);
             }

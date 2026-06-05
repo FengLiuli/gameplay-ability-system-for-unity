@@ -140,7 +140,7 @@ namespace NexusFramework.GAS.ECS
                     var target = inUsage.Target;  
                     var source = inUsage.Source;  
                     foreach (var overflowEffect in stacking.overflowEffects)  
-                        ApplyGameplayEffectImmediate(entityManager, overflowEffect, target, source);  
+                        ApplyGameplayEffectImmediate(entityManager, ecb, overflowEffect, target, source);  
                 }  
   
                 // 2. 检查是否拒绝溢出应用  
@@ -166,13 +166,12 @@ namespace NexusFramework.GAS.ECS
                 }  
             }
 
-            // TODO: EventBridge
-            // GASEventCenter.InvokeOnTryChangeGameplayEffectStackCount(ge, oldStackCount, newStackCount);
-
             if (oldStackCount != newStackCount)
             {
-                // TODO: EventBridge
-                // GASEventCenter.InvokeOnGameplayEffectContainerIsDirty(inUsage.Target);
+                GASInternalBridge.Enqueue(new EffectStackChangedEvent
+                {
+                    EffectEntity = ge, OldStackCount = oldStackCount, NewStackCount = newStackCount
+                });
             }
         }
 
@@ -245,7 +244,7 @@ namespace NexusFramework.GAS.ECS
             return Entity.Null;
         }
 
-        private static void ApplyGameplayEffectImmediate(EntityManager entityManager, Entity gameplayEffect, Entity target, Entity source)
+        private static void ApplyGameplayEffectImmediate(EntityManager entityManager, EntityCommandBuffer ecb, Entity gameplayEffect, Entity target, Entity source)
         {
             if (!entityManager.HasComponent<MCModifiers>(gameplayEffect)) return;
 
@@ -271,16 +270,12 @@ namespace NexusFramework.GAS.ECS
                 if (data.IsClampMin) newValue = math.max(newValue, data.MinValue);
                 if (data.IsClampMax) newValue = math.min(newValue, data.MaxValue);
 
-                // TODO: EventBridge
-                // newValue = GASEventCenter.InvokeOnBaseValueChangeBefore(target, modifier.AttrSetCode, modifier.AttrCode, newValue);
-
                 data.BaseValue = newValue;
 
                 if (newValue != oldValue)
                 {
                     data.Dirty = true;
                     change = true;
-                    // TODO: EventBridge
                 }
 
                 attrSet.Attributes[attrIndex] = data;
@@ -288,7 +283,7 @@ namespace NexusFramework.GAS.ECS
             }
 
             if (change)
-                entityManager.AddComponent<CAttributeIsDirty>(target);
+                ecb.AddComponent<CAttributeIsDirty>(target);
         }
     }
 }

@@ -183,6 +183,32 @@ namespace NexusFramework.GAS.Services
         {
             if (ExWorld is { IsCreated: true })
             {
+                // 回收 SingletonGameplayTagMap 的 NativeContainer
+                var q = ExWorld.EntityManager.CreateEntityQuery(
+                    Unity.Entities.ComponentType.ReadOnly<ECS.SingletonGameplayTagMap>());
+                var entities = q.ToEntityArray(Unity.Collections.Allocator.Temp);
+                foreach (var e in entities)
+                {
+                    if (ExWorld.EntityManager.HasComponent<ECS.SingletonGameplayTagMap>(e))
+                    {
+                        var map = ExWorld.EntityManager.GetComponentData<ECS.SingletonGameplayTagMap>(e);
+                        if (map.Map.IsCreated)
+                        {
+                            // 回收每个 ComGameplayTag 的子 NativeArray
+                            var values = map.Map.GetValueArray(Unity.Collections.Allocator.Temp);
+                            foreach (var v in values)
+                            {
+                                if (v.Parents.IsCreated) v.Parents.Dispose();
+                                if (v.Children.IsCreated) v.Children.Dispose();
+                            }
+                            values.Dispose();
+                            map.Map.Dispose();
+                        }
+                    }
+                }
+                entities.Dispose();
+                q.Dispose();
+
                 ScriptBehaviourUpdateOrder.RemoveWorldFromCurrentPlayerLoop(ExWorld);
                 ExWorld.Dispose();
                 ExWorld = null;

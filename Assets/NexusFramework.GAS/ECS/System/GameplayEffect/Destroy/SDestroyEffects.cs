@@ -18,18 +18,34 @@ namespace NexusFramework.GAS.ECS
         {
             var em = state.EntityManager;
             var ecb = new EntityCommandBuffer(Allocator.Temp);
+            var removalList = new Unity.Collections.NativeList<GEBufferEntry>(Allocator.Temp);
 
             foreach (var (_, ge) in SystemAPI.Query<RefRO<CEffectDestroy>>().WithEntityAccess())
             {
-                CleanupFromAscBuffer(em, ge);
+                CollectAscBufferIndex(em, ge, ref removalList);
                 DisposeAllNativeArrays(em, ge);
                 ecb.DestroyEntity(ge);
             }
 
+            for (int i = removalList.Length - 1; i >= 0; i--)
+            {
+                var r = removalList[i];
+                var buf = em.GetBuffer<BGameplayEffect>(r.Target);
+                buf.RemoveAt(r.Index);
+            }
+
+            removalList.Dispose();
             ecb.Playback(state.EntityManager);
+            ecb.Dispose();
         }
 
-        private static void CleanupFromAscBuffer(EntityManager em, Entity ge)
+        struct GEBufferEntry
+        {
+            public Entity Target;
+            public int Index;
+        }
+
+        private static void CollectAscBufferIndex(EntityManager em, Entity ge, ref Unity.Collections.NativeList<GEBufferEntry> list)
         {
             if (!em.HasComponent<CEffectInUsage>(ge)) return;
             var inUsage = em.GetComponentData<CEffectInUsage>(ge);
@@ -42,7 +58,7 @@ namespace NexusFramework.GAS.ECS
             {
                 if (buffer[i].GameplayEffect == ge)
                 {
-                    buffer.RemoveAt(i);
+                    list.Add(new GEBufferEntry { Target = target, Index = i });
                     break;
                 }
             }

@@ -43,7 +43,7 @@ namespace NexusFramework.GAS.ECS
                     }
 
                 if (!alreadyExist) 
-                    geBuff.Add(new BGameplayEffect { GameplayEffect = ge });
+                    ecb.AppendToBuffer<BGameplayEffect>(asc, new BGameplayEffect { GameplayEffect = ge });
             }
             
             ecb.Playback(state.EntityManager);

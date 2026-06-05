@@ -19,6 +19,8 @@ namespace NexusFramework.GAS.ECS
   
         public void OnUpdate(ref SystemState state)  
         {  
+            var ecb = new EntityCommandBuffer(Unity.Collections.Allocator.Temp);
+            var removalList = new Unity.Collections.NativeList<GEBufferRemoval>(Unity.Collections.Allocator.Temp);
             foreach (var (_, _, grantedAbilityComp, inUsage, ge) in  
                      SystemAPI.Query<  
                          RefRO<CEffectInstance>,  
@@ -27,47 +29,57 @@ namespace NexusFramework.GAS.ECS
                          RefRO<CEffectInUsage>>().WithEntityAccess())  
             {  
                 if (!state.EntityManager.HasComponent<MCGrantedAbilityRuntime>(ge)) continue;  
-  
+   
                 var runtime = state.EntityManager.GetComponentData<MCGrantedAbilityRuntime>(ge);  
                 if (runtime.GrantedAbilityEntities == null) continue;  
-  
+   
                 var grantedAbilities = grantedAbilityComp.GrantedAbilities;  
                 var targetAsc = inUsage.ValueRO.Target;  
                 var abilityBuffer = SystemAPI.GetBuffer<BAbility>(targetAsc);  
-  
+   
                 for (int i = 0; i < grantedAbilities.Length; i++)  
                 {  
                     var abilityEntity = runtime.GrantedAbilityEntities[i];  
                     if (abilityEntity == Entity.Null) continue;  
-  
+   
                     if (grantedAbilities[i].RemovePolicy == GrantedAbilityRemovePolicy.SyncWithEffect)  
                     {  
-                        // 如果能力还在激活中，先取消  
                         if (state.EntityManager.HasComponent<CAbilityActive>(abilityEntity))  
                         {  
-                            state.EntityManager.AddComponent<CAbilityInTryCancel>(abilityEntity);  
+                            ecb.AddComponent<CAbilityInTryCancel>(abilityEntity);  
                         }  
-  
-                        // 从ASC的BAbility Buffer中移除  
+   
                         for (int j = abilityBuffer.Length - 1; j >= 0; j--)  
                         {  
                             if (abilityBuffer[j].Ability == abilityEntity)  
                             {  
-                                abilityBuffer.RemoveAt(j);  
+                                removalList.Add(new GEBufferRemoval { TargetAsc = targetAsc, BufferIndex = j });  
                                 break;  
                             }  
                         }  
-  
-                        // 注销事件回调（防止泄漏）  
-                        UnregisterAllCallbacks(abilityEntity);  
-  
+   
                         runtime.GrantedAbilityEntities[i] = Entity.Null;  
                     }  
-                    // WhenEnd/WhenCancel/WhenCancelOrEnd 由 GASEventCenter 回调处理  
-                    // None 不做任何处理  
                 }  
-            }  
-        }  
+            }
+
+            for (int i = removalList.Length - 1; i >= 0; i--)
+            {
+                var r = removalList[i];
+                var buf = state.EntityManager.GetBuffer<BAbility>(r.TargetAsc);
+                buf.RemoveAt(r.BufferIndex);
+            }
+
+            removalList.Dispose();
+            ecb.Playback(state.EntityManager);
+            ecb.Dispose();
+        }
+
+        struct GEBufferRemoval
+        {
+            public Entity TargetAsc;
+            public int BufferIndex;
+        }
   
         /// <summary>  
         /// 注销该Ability上所有GrantedAbility相关的事件回调  
